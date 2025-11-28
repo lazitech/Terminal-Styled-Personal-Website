@@ -884,7 +884,7 @@
                 }
             } else if (cmd === 'rm') {
                 if (rawCommand.includes('rm -rf /')) {
-                   addToOutput('<span class="text-red-500 font-bold">Waht are you tring to do?!</span>');
+                   addToOutput('<span class="text-red-500 font-bold">Waht are you trying to do?!</span>');
                 }
                 else if (!arg1) addToOutput("rm: missing operand");
                 else if (currentDir[arg1] !== undefined) { 
