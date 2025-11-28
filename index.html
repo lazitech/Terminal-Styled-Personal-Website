@@ -883,7 +883,10 @@
                     addToOutput(`Created file '${arg1}'`);
                 }
             } else if (cmd === 'rm') {
-                if (!arg1) addToOutput("rm: missing operand");
+                if (rawCommand.includes('rm -rf /')) {
+                   addToOutput('<span class="text-red-500 font-bold">Waht are you tring to do?!</span>');
+                }
+                else if (!arg1) addToOutput("rm: missing operand");
                 else if (currentDir[arg1] !== undefined) { 
                     delete currentDir[arg1];
                     addToOutput(`Removed '${arg1}'`);
@@ -920,6 +923,10 @@
             } else if (cmd === 'sudo') {
                 if (!arg1) {
                      addToOutput("usage: sudo command");
+                } else if (isRoot) {
+                    const commandToRun = args.join(' ');
+                    processCommand(commandToRun);
+                    return; 
                 } else {
                     addToOutput(`<span class="text-red-400 font-bold">${currentUser} is not in the sudoers file. This incident will be reported.</span>`);
                     addToOutput(`<span class="text-gray-500 italic text-sm">(Try 'sudo su')</span>`);
@@ -945,7 +952,85 @@
         function addToOutput(htmlContent) {
              outputEl.innerHTML += `<div>${htmlContent}</div>`;
         }
+     
+        function runNeofetch() {
+            const primaryColor = isRoot ? 'text-red-500' : 'text-red-500'; 
+            const secondaryColor = isRoot ? 'text-blue-400' : 'text-white';
+            const userColor = isRoot ? 'text-red-500' : 'text-green-500';
+            const hostColor = isRoot ? 'text-blue-400' : 'text-red-500';
 
+            const logo = [
+                `<span class="${primaryColor}">            .-/+oossssoo+/-.</span>`,
+                `<span class="${primaryColor}">        \`:+ssssssssssssssssss+:\`</span>`,
+                `<span class="${primaryColor}">      -+ssssssssssssssssssyyssss+-</span>`,
+                `<span class="${primaryColor}">    .ossssssssssssssssss</span><span class="${secondaryColor}">dMMMNy</span><span class="${primaryColor}">sssso.</span>`,
+                `<span class="${primaryColor}">   /sssssssssss</span><span class="${secondaryColor}">hdmmNNmmyNMMMMh</span><span class="${primaryColor}">ssssss/</span>`,
+                `<span class="${primaryColor}">  +sssssssss</span><span class="${secondaryColor}">hm</span><span class="${primaryColor}">yd</span><span class="${secondaryColor}">MMMMMMMNddddy</span><span class="${primaryColor}">ssssssss+</span>`,
+                `<span class="${primaryColor}"> /ssssssssh</span><span class="${secondaryColor}">hNMMM</span><span class="${primaryColor}">yh</span><span class="${secondaryColor}">hyyyyhmNMMMNh</span><span class="${primaryColor}">ssssssss/</span>`,
+                `<span class="${primaryColor}">.ssssssss</span><span class="${secondaryColor}">dMMMNh</span><span class="${primaryColor}">ssssssssss</span><span class="${secondaryColor}">hNMMMd</span><span class="${primaryColor}">ssssssss.</span>`,
+                `<span class="${primaryColor}">+ssss</span><span class="${secondaryColor}">hhhyNMMNy</span><span class="${primaryColor}">ssssssssssss</span><span class="${secondaryColor}">yNMMMy</span><span class="${primaryColor}">sssssss+</span>`,
+                `<span class="${primaryColor}">oss</span><span class="${secondaryColor}">yNMMMNyMMh</span><span class="${primaryColor}">ssssssssssssss</span><span class="${secondaryColor}">hmmmh</span><span class="${primaryColor}">ssssssso</span>`,
+                `<span class="${primaryColor}">oss</span><span class="${secondaryColor}">yNMMMNyMMh</span><span class="${primaryColor}">ssssssssssssss</span><span class="${primaryColor}">hmmmhssssssso</span>`,
+                `<span class="${primaryColor}">+ssss</span><span class="${secondaryColor}">hhhyNMMNy</span><span class="${primaryColor}">ssssssssssss</span><span class="${secondaryColor}">yNMMMy</span><span class="${primaryColor}">sssssss+</span>`,
+                `<span class="${primaryColor}">.ssssssss</span><span class="${secondaryColor}">dMMMNh</span><span class="${primaryColor}">ssssssssss</span><span class="${secondaryColor}">hNMMMd</span><span class="${primaryColor}">ssssssss.</span>`,
+                `<span class="${primaryColor}"> /ssssssss</span><span class="${secondaryColor}">hNMMM</span><span class="${primaryColor}">yh</span><span class="${secondaryColor}">hyyyyhdNMMMNh</span><span class="${primaryColor}">ssssssss/</span>`,
+                `<span class="${primaryColor}">  +sssssssss</span><span class="${secondaryColor}">dm</span><span class="${primaryColor}">yd</span><span class="${secondaryColor}">MMMMMMMMddddy</span><span class="${primaryColor}">ssssssss+</span>`,
+                `<span class="${primaryColor}">   /sssssssssss</span><span class="${secondaryColor}">hdmNNNNmyNMMMMh</span><span class="${primaryColor}">ssssss/</span>`,
+                `<span class="${primaryColor}">    .ossssssssssssssssss</span><span class="${secondaryColor}">dMMMNy</span><span class="${primaryColor}">sssso.</span>`,
+                `<span class="${primaryColor}">      -+sssssssssssssssss</span><span class="${secondaryColor}">yyy</span><span class="${primaryColor}">ssss+-</span>`,
+                `<span class="${primaryColor}">        \`:+ssssssssssssssssss+:\`</span>`,
+                `<span class="${primaryColor}">            .-/+oosssoo+/-.</span>`
+            ];
+
+            const info = [
+                `<span class="${userColor} font-bold">${currentUser}</span><span class="text-gray-200">@</span><span class="${hostColor} font-bold">${CONFIG.hostname}</span>`,
+                '-----------------',
+                `<span class="${primaryColor}">OS</span>: ${isRoot ? 'CyberOS v2077 (Rooted)' : 'Ubuntu 22.04.3 LTS aarch64'}`,
+                `<span class="${primaryColor}">Host</span>: Browser Virtual Machine`,
+                `<span class="${primaryColor}">Kernel</span>: 6.8.0-web-v1`,
+                `<span class="${primaryColor}">Uptime</span>: ` + getUptimeFormatted(), 
+                `<span class="${primaryColor}">Packages</span>: 1017 (npm), 2 (yarn)`,
+                `<span class="${primaryColor}">Shell</span>: bash (simulated)`,
+                `<span class="${primaryColor}">Resolution</span>: ` + window.innerWidth + 'x' + window.innerHeight,
+                `<span class="${primaryColor}">CPU</span>: (1) @ Virtual Core`,
+                `<span class="${primaryColor}">Memory</span>: 380MiB / 3984MiB`,
+                '',
+                '<div class="flex gap-1"><span class="w-4 h-4 bg-black"></span><span class="w-4 h-4 bg-red-500"></span><span class="w-4 h-4 bg-green-500"></span><span class="w-4 h-4 bg-yellow-500"></span><span class="w-4 h-4 bg-blue-500"></span><span class="w-4 h-4 bg-purple-500"></span><span class="w-4 h-4 bg-cyan-500"></span><span class="w-4 h-4 bg-gray-200"></span></div>'
+            ];
+            
+            const logoHtml = logo.join('\n');
+            const infoHtml = info.join('\n');
+
+            const containerHtml = `
+                <div class="flex flex-col md:flex-row gap-6 mt-4 mb-4 items-center align-start">
+                     <div class="leading-snug whitespace-pre font-bold shrink-0 text-base md:text-lg">${logoHtml}</div>
+                     <div class="leading-snug whitespace-pre text-base md:text-lg self-center">${infoHtml}</div>
+                </div>
+            `;
+            addToOutput(containerHtml);
+        }
+        
+        function getUptimeFormatted() {
+            const now = new Date();
+            const diffMs = now - startTime;
+            
+            const diffS = Math.floor(diffMs / 1000);
+            const diffM = Math.floor(diffS / 60);
+            const diffH = Math.floor(diffM / 60);
+            const diffD = Math.floor(diffH / 24);
+
+            const minutes = diffM % 60;
+            const hours = diffH % 24;
+            const days = diffD;
+
+            let parts = [];
+            if (days > 0) parts.push(`${days} days`);
+            if (hours > 0) parts.push(`${hours} hours`);
+            parts.push(`${minutes} mins`); 
+            
+            return parts.join(', ');
+        }
+        
         function typewriter(lines, index) {
             if (index < lines.length) {
                 addToOutput(lines[index]);
