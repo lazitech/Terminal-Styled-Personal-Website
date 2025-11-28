@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #300a24;
+            --text-color: #e5e7eb;
+            --prompt-user: #4ade80; /* green-400 */
+            --prompt-path: #60a5fa; /* blue-400 */
+            --cursor-color: #e5e7eb; /* match text color */
+            --link-color: #60a5fa;
+        }
+
+        body.theme-hacker {
+            --bg-color: #000000;
+            --text-color: #00ff00;
+            --prompt-user: #00ff00;
+            --prompt-path: #008000;
+            --cursor-color: #00ff00;
+            --link-color: #00ff00;
+        }
+
+        body.theme-retro {
+            --bg-color: #1a1a1a;
+            --text-color: #ffb000;
+            --prompt-user: #ffb000;
+            --prompt-path: #cc8800;
+            --cursor-color: #ffb000;
+            --link-color: #ffb000;
+        }
+
+        /* --- Root / Cyberpunk Mode --- */
+        body.theme-root {
+            --bg-color: #050505;
+            --text-color: #ff0055; /* Neon Red/Pink */
+            --prompt-user: #ff0055;
+            --prompt-path: #00e5ff; /* Cyan */
+            --cursor-color: #ff0055;
+            --link-color: #00e5ff;
+            /* Slightly reduce glow for readability */
+            text-shadow: 0 0 3px rgba(255, 0, 85, 0.5);
+        }
+        
+        body.theme-root::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 60;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        
+        /* Soft flicker for ambient root effect */
+        @keyframes flicker {
+            0% { opacity: 0.98; }
+            50% { opacity: 1; }
+            100% { opacity: 0.98; }
+        }
+        body.theme-root #terminal-container {
+            animation: flicker 2s infinite ease-in-out; 
+        }
+
+        /* --- Soft Power Surge Effect --- */
+        @keyframes glitch-snap {
+            0% { 
+                transform: translateX(0); 
+                filter: brightness(1);
+            }
+            25% { 
+                transform: translateX(-1px); 
+                filter: brightness(1.1); 
+            }
+            50% { 
+                transform: translateX(1px); 
+                filter: brightness(1.2); 
+            }
+            75% { 
+                transform: translateX(0); 
+                filter: brightness(1.05);
+            }
+            100% { 
+                transform: translateX(0); 
+                filter: brightness(1);
+            }
+        }
+        
+        .glitch-active {
+            animation: glitch-snap 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+        
+        /* Soft flash overlay */
+        .glitch-active::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.03); 
+            mix-blend-mode: screen; 
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* --- Mobile Warning Modal --- */
+        #mobile-warning {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 20, 0.95);
+            border: 1px solid var(--text-color);
+            padding: 24px;
+            z-index: 100;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            max-width: 85%;
+            width: 320px;
+            backdrop-filter: blur(5px);
+        }
+        
+        #mobile-warning h3 {
+            color: #facc15; /* Yellow-400 */
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        #mobile-warning button {
+            margin-top: 20px;
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--text-color);
+            padding: 8px 16px;
+            font-family: inherit;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        #mobile-warning button:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; 
+        }
+        
+        a {
+            color: var(--link-color);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        a:hover {
+            opacity: 0.8;
+        }
+        
+        #commandInput:focus { outline: none; border: none; }
+        #commandInput { 
+            caret-color: transparent; 
+            background: transparent;
+            color: var(--text-color);
+            font-family: inherit;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .password-mode #commandInput { color: transparent; }
+        
+        .cursor-block {
+            background-color: var(--cursor-color);
+            opacity: 0.6; 
+            pointer-events: none; 
+            height: 1.5em; 
+            top: -0.1em; 
+            transition: left 0.08s cubic-bezier(0.25, 1, 0.5, 1), width 0.08s ease-out;
+        }
+        
+        .password-mode .cursor-block { display: none; }
+
+        .dynamic-user { color: var(--prompt-user); }
+        .dynamic-path { color: var(--prompt-path); }
+
+        @keyframes blink { 0%, 100% { opacity: 0.6; } 50% { opacity: 0; } }
+        .animate-blink { animation: blink 1s step-end infinite; }
+        
+        .input-focused .cursor-block {
+            animation: blink 1s step-end infinite;
+            opacity: 0.6;
+        }
+        .input-blurred .cursor-block {
+            opacity: 0.2; 
+            animation: none;
+        }
+
+        /* Canvas Layers */
+        .full-screen-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #matrixCanvas {
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        #particleCanvas {
+            z-index: 55; /* On top of matrix */
+        }
+
+        .matrix-active #matrixCanvas { opacity: 1; }
+        .matrix-active #terminal-container { opacity: 0.2; }
+
+        #terminal-container::-webkit-scrollbar { width: 10px; }
+        #terminal-container::-webkit-scrollbar-track { background: transparent; }
+        #terminal-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 5px; }
+        #terminal-container::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+    </style>
+</head>
+<body onclick="focusInput()">
+    
+    <canvas id="matrixCanvas" class="full-screen-canvas"></canvas>
+    <canvas id="particleCanvas" class="full-screen-canvas"></canvas>
+
+    <div id="terminal-container" class="relative z-10 h-full overflow-y-auto p-4 scroll-smooth">
+        <div id="output" class="whitespace-pre-wrap text-base md:text-lg break-words min-h-full pb-8"></div>
+    </div>
+
+    <!-- Mobile Warning Modal -->
+    <div id="mobile-warning">
+        <h3>System Notice</h3>
+        <div class="text-sm mb-4">Mobile Device Detected</div>
+        <div class="text-sm opacity-80 mb-2">
+            For the best experience (typing commands), please access this terminal via a <strong>Desktop Computer</strong>.
+        </div>
+        <button onclick="document.getElementById('mobile-warning').style.display='none'">[ Proceed Anyway ]</button>
+    </div>
+
+    <script>
+        // --- CONFIGURATION AREA ---
+        const CONFIG = {
+            username: 'guest',
+            hostname: 'portfolio',
+            adminPassword: 'admin',
+            name: 'Alex Developer',
+            email: 'alex@example.com',
+            github: 'https://github.com/your-username',
+            linkedin: 'https://linkedin.com/in/your-profile',
+            resumeUrl: '#' // Replace with your real PDF link
+        };
+        // --------------------------
+
+        let currentUser = CONFIG.username;
+        let isRoot = false;
+        let awaitingPassword = false;
+
+        document.title = `${currentUser}@${CONFIG.hostname}: ~`;
+
+        const outputEl = document.getElementById('output');
+        const terminalContainer = document.getElementById('terminal-container');
+        let inputEl = null; 
+        let cursorEl = null; 
+        let inputWrapperEl = null; 
+        let startTime;
+        
+        const measureCanvas = document.createElement('canvas');
+        const measureCtx = measureCanvas.getContext('2d');
+        
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        const links = {
+            'github': 'https://github.com',
+            'blog': 'https://medium.com',
+            'linkedin': 'https://linkedin.com'
+        };
+
+        const welcomeMessage = [
+            `Linux version 6.8.0-generic (${currentUser}@${CONFIG.hostname})...`,
+            `<span class="text-yellow-400 font-bold">★ ${CONFIG.name}'s Portfolio ★</span>`,
+            "",
+            "Type 'help' for all commands.",
+            "",
+            "<span class='text-gray-400'>Shortcuts:</span>  <span class='text-blue-400'>contact</span> | <span class='text-blue-400'>resume</span> | <span class='text-blue-400'>github</span> | <span class='text-blue-400'>email</span>",
+            "",
+            `Logged in as: ${currentUser}@${CONFIG.hostname}`,
+            ""
+        ];
+
+        // File System Content
+        const fileSystem = {
+            'README.md': [
+                "# Welcome to my Portfolio",
+                "",
+                "This is a web-based terminal emulator to showcase my technical skills.",
+                "You can use this just like a real Linux terminal.",
+                "",
+                "Common Commands:",
+                "- `contact`: Get contact info",
+                "- `resume`: View full resume",
+                "- `cd projects`: View projects folder",
+                "- `github`: Open GitHub",
+            ].join('\n'),
+            'help.txt': [
+                "Available Commands:",
+                "  help          - Show help",
+                "  ls            - List files",
+                "  cat [file]    - View file content",
+                "  cd [dir]      - Change directory",
+                "  pwd           - Show current path",
+                "  whoami        - Show current user",
+                "  mkdir [dir]   - Create directory",
+                "  date          - Show current date",
+                "  touch [file]  - Create new file",
+                "  rm [file]     - Remove file",
+                "  theme [name]  - Change theme (ubuntu/hacker/retro)",
+                "  matrix        - Matrix effect",
+                "  cowsay [msg]  - Make a cow say something",
+                "  history       - View command history",
+                "  neofetch      - System info",
+                "  sudo su       - Admin mode (Easter egg!)",
+                "  reboot        - Reboot the system",
+                "  poweroff      - Shut down the system",
+                "  exit          - Exit admin mode",
+                "  clear         - Clear screen",
+                ""
+            ].join('\n'),
+            'contact.txt': [
+                "Email: " + CONFIG.email,
+                "GitHub: " + CONFIG.github,
+                "LinkedIn: " + CONFIG.linkedin
+            ].join('\n'),
+            'projects': {
+                'ai-chatbot.txt': "Intelligent chatbot based on OpenAI API. Tech stack: Python, React.",
+                'e-commerce.txt': "High-performance e-commerce platform refactor. Tech stack: Next.js, Tailwind CSS.",
+                'terminal-portfolio.txt': "The website you are looking at! A terminal emulator built with vanilla JS."
+            }
+        };
+        
+        let currentPath = ['~'];
+
+        function getObjectAtCurrentPath() {
+            let currentLevel = fileSystem;
+            for (let i = 1; i < currentPath.length; i++) {
+                currentLevel = currentLevel[currentPath[i]];
+            }
+            return currentLevel;
+        }
+
+        function getPromptHtml() {
+            if (awaitingPassword) return '';
+            
+            const pathString = currentPath.length === 1 ? '~' : '~/' + currentPath.slice(1).join('/');
+            const symbol = isRoot ? '#' : '$';
+            return `<span class="text-base md:text-lg shrink-0"><span class="dynamic-user">${currentUser}@${CONFIG.hostname}</span><span class="text-gray-400">:</span><span class="dynamic-path">${pathString}</span><span class="text-gray-400">${symbol}</span>&nbsp;</span>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            startTime = new Date();
+            checkMobile(); // Check for mobile device on load
+            typewriter(welcomeMessage, 0);
+            initMatrix();
+            initParticles();
+        });
+
+        function checkMobile() {
+            // Check if screen width is less than 768px (typical mobile/tablet breakpoint)
+            if (window.innerWidth < 768) {
+                const warningModal = document.getElementById('mobile-warning');
+                if (warningModal) {
+                    warningModal.style.display = 'block';
+                }
+            }
+        }
+
+        function getPreciseCharWidth(element) {
+            const style = window.getComputedStyle(element);
+            const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            measureCtx.font = font;
+            return measureCtx.measureText('M').width;
+        }
+
+        function onInputKeydown(e) {
+            requestAnimationFrame(updateInputLayout);
+            
+            if (isRoot && !awaitingPassword && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                spawnParticlesAtCursor();
+            }
+
+            if (awaitingPassword) {
+                if (e.key === 'Enter') {
+                    handlePasswordSubmit(inputEl.value);
+                    return;
+                }
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    inputEl.value = commandHistory[historyIndex];
+                    updateInputLayout();
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    inputEl.value = commandHistory[historyIndex];
+                    updateInputLayout();
+                } else {
+                    historyIndex = commandHistory.length;
+                    inputEl.value = '';
+                    updateInputLayout();
+                }
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                 requestAnimationFrame(updateInputLayout);
+            } else if (e.key === 'Enter') {
+                const command = inputEl.value.trim();
+                
+                // --- Cyberpunk Glitch Effect ---
+                if (isRoot && command) {
+                    document.body.classList.remove('glitch-active');
+                    void document.body.offsetWidth; // Trigger reflow
+                    document.body.classList.add('glitch-active');
+                    
+                    setTimeout(() => {
+                         document.body.classList.remove('glitch-active');
+                    }, 200);
+                }
+                // ----------------
+                
+                const oldWrapper = inputEl.parentElement; 
+                const oldPromptLine = oldWrapper.parentElement; 
+                
+                oldPromptLine.innerHTML = `${getPromptHtml()}<span>${inputEl.value}</span>`;
+                
+                if (command) {
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length;
+                    processCommand(command);
+                } else {
+                    addNewInputLine();
+                }
+                
+                scrollToBottom();
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                handleTabCompletion();
+            } else if (e.key === 'c' && e.ctrlKey) {
+                e.preventDefault();
+                const oldWrapper = inputEl.parentElement;
+                const oldPromptLine = oldWrapper.parentElement;
+                oldPromptLine.innerHTML = `${getPromptHtml()}<span>${inputEl.value}</span><span class="text-red-400 ml-1">^C</span>`;
+                addNewInputLine();
+                scrollToBottom();
+            }
+            
+            requestAnimationFrame(updateInputLayout);
+        }
+
+        function updateInputLayout() {
+            if (!inputEl || !cursorEl) return;
+            if (awaitingPassword) return;
+
+            const charWidth = getPreciseCharWidth(inputEl);
+            const len = inputEl.value.length;
+            const cursorIndex = inputEl.selectionStart;
+
+            inputEl.style.width = `${Math.max(1, len) * charWidth}px`;
+            cursorEl.style.left = `${cursorIndex * charWidth}px`;
+            cursorEl.style.width = `${charWidth}px`;
+        }
+
+        // --- Particle System ---
+        let particles = [];
+        const particleCanvas = document.getElementById('particleCanvas');
+        const particleCtx = particleCanvas.getContext('2d');
+
+        function initParticles() {
+            resizeParticles();
+            window.addEventListener('resize', resizeParticles);
+            loopParticles();
+        }
+
+        function resizeParticles() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+
+        function spawnParticlesAtCursor() {
+            if (!inputEl) return;
+            const rect = inputEl.getBoundingClientRect();
+            const charWidth = getPreciseCharWidth(inputEl);
+            const cursorIndex = inputEl.selectionStart;
+            const x = rect.left + (cursorIndex * charWidth) + (charWidth / 2);
+            const y = rect.top + (rect.height / 2);
+            const count = 5 + Math.random() * 3;
+            for (let i = 0; i < count; i++) {
+                particles.push(createParticle(x, y));
+            }
+        }
+
+        function createParticle(x, y) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 3;
+            return {
+                x: x, y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 1.0,
+                color: `rgb(255, ${Math.floor(Math.random() * 50)}, ${Math.floor(Math.random() * 100)})`,
+                size: 2 + Math.random() * 2
+            };
+        }
+
+        function loopParticles() {
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.02;
+                if (p.life <= 0) particles.splice(i, 1);
+                else {
+                    particleCtx.globalAlpha = p.life;
+                    particleCtx.fillStyle = p.color;
+                    particleCtx.beginPath();
+                    particleCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    particleCtx.fill();
+                }
+            }
+            particleCtx.globalAlpha = 1;
+            requestAnimationFrame(loopParticles);
+        }
+
+        function handleTabCompletion() {
+            const currentDir = getObjectAtCurrentPath();
+            const currentInputText = inputEl.value;
+            if (currentInputText.endsWith(' ') || currentInputText.length === 0) return;
+
+            const parts = currentInputText.split(' ').filter(Boolean);
+            
+            // Keep original case
+            const textToComplete = parts[parts.length - 1]; 
+            
+            let candidates = [];
+            if (parts.length === 1) {
+                // Commands - added 'poweroff'
+                const cmds = ['help', 'ls', 'cat', 'cd', 'mkdir', 'pwd', 'whoami', 'sudo', 'date', 'touch', 'rm', 'theme', 'matrix', 'clear', 'neofetch', 'exit', 'contact', 'github', 'email', 'resume', 'download', 'cowsay', 'history', 'reboot', 'poweroff'];
+                candidates = [...Object.keys(currentDir), ...cmds];
+            } else {
+                candidates = Object.keys(currentDir);
+            }
+
+            // Match with strict case
+            const matches = candidates.filter(item => item.startsWith(textToComplete));
+
+            if (matches.length === 1) {
+                const completion = matches[0];
+                const isDir = (currentDir[completion] && typeof currentDir[completion] === 'object');
+                parts[parts.length - 1] = completion;
+                inputEl.value = parts.join(' ') + (isDir ? '/' : ' ');
+                updateInputLayout(); 
+            } else if (matches.length > 1) {
+                const commonPrefix = matches.reduce((prefix, current) => {
+                    let i = 0;
+                    while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
+                        i++;
+                    }
+                    return prefix.slice(0, i);
+                });
+
+                if (commonPrefix.length > textToComplete.length) {
+                    parts[parts.length - 1] = commonPrefix;
+                    inputEl.value = parts.join(' ');
+                    updateInputLayout();
+                }
+            }
+        }
+
+        function addNewInputLine() {
+            const newPromptLine = document.createElement('div');
+            newPromptLine.className = 'flex items-center mt-2 shrink-0';
+            const wrapperClass = awaitingPassword ? 'relative flex items-center group input-focused password-mode' : 'relative flex items-center group input-focused';
+            
+            newPromptLine.innerHTML = `
+                ${getPromptHtml()}
+                <div class="${wrapperClass}" id="activeInputWrapper">
+                    <input type="text" id="commandInput" 
+                        class="bg-transparent border-none outline-none p-0 text-base md:text-lg z-10 leading-normal" 
+                        autocomplete="off" autocapitalize="none" spellcheck="false">
+                    <span id="cursorBlock" class="cursor-block absolute z-0 animate-blink"></span>
+                </div>
+            `;
+            
+            outputEl.appendChild(newPromptLine);
+            
+            inputEl = document.getElementById('commandInput');
+            cursorEl = document.getElementById('cursorBlock');
+            inputWrapperEl = document.getElementById('activeInputWrapper');
+            
+            inputEl.addEventListener('keydown', onInputKeydown);
+            inputEl.addEventListener('input', () => {
+                 requestAnimationFrame(updateInputLayout);
+                 if (isRoot && !awaitingPassword && inputEl.value.length > 0) {
+                     spawnParticlesAtCursor();
+                 }
+            }); 
+            inputEl.addEventListener('click', () => requestAnimationFrame(updateInputLayout)); 
+            
+            inputEl.addEventListener('focus', () => {
+                inputWrapperEl.classList.add('input-focused');
+                inputWrapperEl.classList.remove('input-blurred');
+            });
+            inputEl.addEventListener('blur', () => {
+                inputWrapperEl.classList.remove('input-focused');
+                inputWrapperEl.classList.add('input-blurred');
+            });
+            
+            updateInputLayout();
+            inputEl.focus();
+            scrollToBottom();
+        }
+
+        // --- Feature Implementation ---
+        
+        function runCowsay(text) {
+            if (!text) text = "Moo! (Try: cowsay Hello)";
+            const len = text.length;
+            const border = '-'.repeat(len);
+            
+            const cow = [
+                ` ${'_'.repeat(len + 2)}`,
+                `< ${text} >`,
+                ` ${'-'.repeat(len + 2)}`,
+                `        \\   ^__^`,
+                `         \\  (oo)\\_______`,
+                `            (__)\\       )\\/\\`,
+                `                ||----w |`,
+                `                ||     ||`
+            ].join('\n');
+            
+            addToOutput(`<pre class="leading-snug text-yellow-200 font-bold">${cow}</pre>`);
+        }
+
+        function runHistory() {
+            if (commandHistory.length === 0) {
+                addToOutput("No history yet.");
+                return;
+            }
+            // Create a numbered list
+            const historyText = commandHistory.map((cmd, index) => `  ${index + 1}  ${cmd}`).join('\n');
+            addToOutput(`<div class="text-gray-400">${historyText}</div>`);
+        }
+
+        function runReboot() {
+            addToOutput("System is rebooting...");
+            addToOutput("Stopping services...");
+            addToOutput("Killing processes...");
+            
+            // Disable input
+            if (inputEl) inputEl.disabled = true;
+            
+            setTimeout(() => {
+                document.body.style.backgroundColor = 'black';
+                document.body.innerHTML = ''; // Clear everything
+            }, 1500);
+
+            setTimeout(() => {
+                window.location.reload(); // Actual reload
+            }, 2500);
+        }
+
+        function runPoweroff() {
+            addToOutput("System is powering off...");
+            addToOutput("ACPI: Powering off...");
+            
+            // Disable input
+            if (inputEl) inputEl.disabled = true;
+            
+            setTimeout(() => {
+                document.body.style.backgroundColor = 'black';
+                document.body.innerHTML = '<div style="color:#666; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; text-align:center;">System Halted.<br>It is now safe to close this tab.</div>';
+                
+                // Attempt to close window (may be blocked by browser)
+                try {
+                    window.close();
+                } catch(e) {
+                    console.log("Close blocked");
+                }
+            }, 1500);
+        }
+
+        function handlePasswordSubmit(password) {
+            const oldWrapper = inputEl.parentElement; 
+            const oldPromptLine = oldWrapper.parentElement;
+            oldPromptLine.innerHTML = ``; 
+
+            if (password === CONFIG.adminPassword) {
+                isRoot = true;
+                currentUser = 'root';
+                document.body.className = 'theme-root'; 
+                addToOutput(`<div class="text-red-500 font-bold mt-2">ACCESS GRANTED</div>`);
+                addToOutput(`<div class="text-gray-400">Welcome to Root Shell. System privileges escalated.</div>`);
+                addToOutput(`<div class="text-gray-400">PROTOCOL: OVERRIDE_ENABLED</div>`);
+            } else {
+                addToOutput(`<div class="text-red-400 mt-1">Sorry, try again.</div>`);
+            }
+            
+            awaitingPassword = false;
+            addNewInputLine();
+            scrollToBottom();
+        }
+
+        // --- Display Functions ---
+        function displayContactCard() {
+            const card = [
+                `<div class="border-2 border-dashed border-gray-500 p-4 inline-block mt-2 mb-2">`,
+                `  <div class="font-bold text-xl mb-2 text-blue-400">${CONFIG.name}</div>`,
+                `  <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">`,
+                `    <span class="text-gray-400">Email:</span>    <a href="mailto:${CONFIG.email}">${CONFIG.email}</a>`,
+                `    <span class="text-gray-400">GitHub:</span>   <a href="${CONFIG.github}" target="_blank">@${CONFIG.github.split('/').pop()}</a>`,
+                `    <span class="text-gray-400">LinkedIn:</span> <a href="${CONFIG.linkedin}" target="_blank">Profile</a>`,
+                `  </div>`,
+                `</div>`
+            ].join('');
+            addToOutput(card);
+        }
+
+        function displayResume() {
+             const resumeContent = [
+                "--- Resume Summary ---",
+                "Name: " + CONFIG.name,
+                "Role: Full Stack Engineer",
+                "",
+                "[Skills]",
+                "- Frontend: HTML5, CSS3, Tailwind, React, Vue",
+                "- Backend: Node.js, Python, Go",
+                "- Tools: Git, Docker, AWS",
+                "",
+                "[Experience]",
+                "2022-Present: Senior Frontend Engineer @ Tech Corp",
+                "2020-2022: Full Stack Developer @ Startup Inc",
+                ""
+            ].join('\n');
+            
+             addToOutput(resumeContent);
+             addToOutput(`<div class="mt-2 text-gray-400">To obtain a PDF copy, please use the <span class="text-yellow-400">'download resume'</span> command.</div>`);
+        }
+
+        function processCommand(rawCommand) {
+            const parts = rawCommand.split(' ').filter(Boolean);
+            const cmd = parts[0].toLowerCase();
+            const args = parts.slice(1);
+            
+            const arg1 = args[0] ? args[0].replace(/\/$/, '') : undefined;
+            const currentDir = getObjectAtCurrentPath();
+
+            if (cmd === 'sudo' && arg1 === 'su') {
+                if (isRoot) {
+                    addToOutput("You are already root.");
+                    addNewInputLine();
+                } else {
+                    addToOutput(`[sudo] password for ${currentUser}: `);
+                    awaitingPassword = true;
+                    addNewInputLine();
+                }
+                return; 
+            }
+
+            if (cmd === 'exit') {
+                if (isRoot) {
+                    isRoot = false;
+                    currentUser = CONFIG.username;
+                    document.body.className = ''; 
+                    addToOutput("logout");
+                } else {
+                    addToOutput("exit: terminal window cannot be closed (it's a web page!)");
+                }
+            } else if (cmd === 'clear') {
+                outputEl.innerHTML = '';
+                addNewInputLine(); 
+                return; 
+            
+            } else if (cmd === 'contact') {
+                displayContactCard();
+            } else if (cmd === 'github') {
+                addToOutput(`Opening GitHub...`);
+                window.open(CONFIG.github, '_blank');
+            } else if (cmd === 'resume') {
+                displayResume();
+            } else if (cmd === 'email') {
+                addToOutput(`Opening mail client...`);
+                window.location.href = `mailto:${CONFIG.email}`;
+            
+            } else if (cmd === 'download') {
+                if (args[0] && args[0].toLowerCase() === 'resume') {
+                    addToOutput(`Downloading resume...`);
+                    const link = document.createElement('a');
+                    link.href = CONFIG.resumeUrl;
+                    link.download = 'resume.pdf';
+                    link.target = '_blank';
+                    link.click();
+                } else {
+                    addToOutput("Usage: download resume");
+                }
+            
+            } else if (cmd === 'cowsay') {
+                runCowsay(args.join(' '));
+            } else if (cmd === 'history') {
+                runHistory();
+            } else if (cmd === 'reboot') {
+                runReboot();
+                return; // Stop processing
+            } else if (cmd === 'poweroff') {
+                runPoweroff();
+                return; // Stop processing
+
+            } else if (cmd === 'help') {
+                addToOutput(fileSystem['help.txt'] || "Help file missing.");
+                addToOutput("\nShortcuts:\n  contact, resume, github, email, download");
+
+            } else if (cmd === 'ls') {
+                const items = Object.keys(currentDir);
+                if (items.length > 0) {
+                    const output = items.map(item => {
+                        return (typeof currentDir[item] === 'object') 
+                            ? `<span class="text-blue-400 font-bold">${item}/</span>` 
+                            : item;
+                    });
+                    addToOutput(output.join('  '));
+                }
+            } else if (cmd === 'cd') {
+                if (!arg1 || arg1 === '~') {
+                    currentPath = ['~'];
+                } else if (arg1 === '..') {
+                    if (currentPath.length > 1) currentPath.pop();
+                } else if (currentDir[arg1] && typeof currentDir[arg1] === 'object') {
+                    currentPath.push(arg1);
+                } else {
+                    addToOutput(`bash: cd: ${args[0] || ''}: No such directory`);
+                }
+            } else if (cmd === 'cat') {
+                if (currentDir[arg1] && typeof currentDir[arg1] === 'string') {
+                    addToOutput(currentDir[arg1]);
+                } else if (currentDir[arg1] && typeof currentDir[arg1] === 'object') {
+                     addToOutput(`cat: ${args[0]}: Is a directory`);
+                } else {
+                    addToOutput(`cat: ${args[0] || ''}: No such file`);
+                }
+            } else if (cmd === 'neofetch') {
+                runNeofetch();
+            } else if (cmd === 'touch') {
+                if (!arg1) addToOutput("touch: missing file operand");
+                else {
+                    currentDir[arg1] = "";
+                    addToOutput(`Created file '${arg1}'`);
+                }
+            } else if (cmd === 'rm') {
+                if (!arg1) addToOutput("rm: missing operand");
+                else if (currentDir[arg1] !== undefined) { 
+                    delete currentDir[arg1];
+                    addToOutput(`Removed '${arg1}'`);
+                } else {
+                    addToOutput(`rm: cannot remove '${arg1}': No such file`);
+                }
+            } else if (cmd === 'theme') {
+                if (['ubuntu', 'hacker', 'retro'].includes(arg1)) {
+                    document.body.className = `theme-${arg1}`;
+                    addToOutput(`Theme changed to ${arg1}`);
+                } else {
+                    addToOutput("Usage: theme [ubuntu | hacker | retro]");
+                }
+            } else if (cmd === 'matrix') {
+                startMatrix();
+                addToOutput("Matrix mode enabled. Click or press any key to exit.");
+            
+            } else if (cmd === 'whoami') {
+                addToOutput(currentUser);
+                
+            } else if (cmd === 'pwd') {
+                const pathStr = currentPath.join('/').replace('~', '/home/' + currentUser);
+                addToOutput(pathStr);
+                
+            } else if (cmd === 'mkdir') {
+                if (!arg1) {
+                    addToOutput("mkdir: missing operand");
+                } else if (currentDir[arg1]) {
+                    addToOutput(`mkdir: cannot create directory ‘${arg1}’: File exists`);
+                } else {
+                    currentDir[arg1] = {};
+                }
+                
+            } else if (cmd === 'sudo') {
+                if (!arg1) {
+                     addToOutput("usage: sudo command");
+                } else {
+                    addToOutput(`<span class="text-red-400 font-bold">${currentUser} is not in the sudoers file. This incident will be reported.</span>`);
+                    addToOutput(`<span class="text-gray-500 italic text-sm">(Try 'sudo su')</span>`);
+                }
+
+            } else if (cmd === 'date') {
+                addToOutput(new Date().toString());
+
+            } else {
+                addToOutput(`bash: ${cmd}: command not found`);
+            }
+
+            if (cmd !== 'clear' && cmd !== 'matrix') {
+                addToOutput(""); 
+            }
+            
+            // Only add new line if NOT rebooting or powering off
+            if (cmd !== 'reboot' && cmd !== 'poweroff') {
+                addNewInputLine();
+            }
+        }
+
+        function addToOutput(htmlContent) {
+             outputEl.innerHTML += `<div>${htmlContent}</div>`;
+        }
+
+        function typewriter(lines, index) {
+            if (index < lines.length) {
+                addToOutput(lines[index]);
+                scrollToBottom();
+                setTimeout(() => typewriter(lines, index + 1), 50); 
+            } else {
+                addNewInputLine();
+            }
+        }
+        
+        function scrollToBottom() {
+            terminalContainer.scrollTop = terminalContainer.scrollHeight;
+        }
+
+        function focusInput() {
+            if(inputEl) {
+                inputEl.focus();
+            }
+            if(matrixInterval) stopMatrix();
+        }
+
+        // --- Matrix Effect Implementation (Fixed) ---
+        let matrixInterval = null;
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function initMatrix() {
+            resizeMatrix();
+            window.addEventListener('resize', resizeMatrix);
+        }
+        
+        function resizeMatrix() {
+             canvas.width = window.innerWidth;
+             canvas.height = window.innerHeight;
+        }
+
+        function startMatrix() {
+            document.body.classList.add('matrix-active');
+            resizeMatrix();
+            
+            const fontSize = 16;
+            const columns = Math.floor(canvas.width / fontSize);
+            const drops = Array(columns).fill(1); 
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            matrixInterval = setInterval(() => {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#0F0';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+                    
+                    const x = i * fontSize;
+                    const y = drops[i] * fontSize;
+
+                    ctx.fillText(text, x, y);
+
+                    if (y > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+
+                    drops[i]++;
+                }
+            }, 33); 
+
+            setTimeout(() => {
+                 const exitHandler = () => stopMatrix(exitHandler);
+                 document.addEventListener('keydown', exitHandler, { once: true });
+                 document.addEventListener('click', exitHandler, { once: true });
+            }, 100);
+        }
+
+        function stopMatrix(handler) {
+            if (matrixInterval) {
+                clearInterval(matrixInterval);
+                matrixInterval = null;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                document.body.classList.remove('matrix-active');
+                if(handler) {
+                    document.removeEventListener('keydown', handler);
+                    document.removeEventListener('click', handler);
+                }
+                if(inputEl) inputEl.focus();
+            }
+        }
+
+    </script>
+</body>
+</html>
